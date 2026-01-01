@@ -1,0 +1,33 @@
+{
+  "name": "tse-backend",
+  "version": "1.0.0",
+  "description": "TSE Platform Backend API Gateway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "support",
+    "ticket",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "firebase-admin": "^12.0.0",
+    "morgan": "^1.10.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.12",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

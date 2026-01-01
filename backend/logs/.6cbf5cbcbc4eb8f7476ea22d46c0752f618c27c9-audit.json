@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "E:\\BIT Works\\Project Works\\Tse\\backend\\logs\\.6cbf5cbcbc4eb8f7476ea22d46c0752f618c27c9-audit.json",
+    "files": [
+        {
+            "date": 1767206082426,
+            "name": "E:\\BIT Works\\Project Works\\Tse\\backend\\logs\\app-2026-01-01.log",
+            "hash": "946c0991eaed05e7f477423f8783813d4cf315a5b74feb2a0ef9855ef63c5787"
+        }
+    ],
+    "hashType": "sha256"
+}
