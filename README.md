@@ -385,6 +385,240 @@ Enhanced console logging throughout the application:
 - **Database errors**: Verify Firebase credentials or use MockDb
 - **Build failures**: Clear node_modules and reinstall
 
+## 🚀 Production Deployment
+
+### Deploy to Vercel (Frontend) + Render (Backend + NLP)
+
+#### Prerequisites
+- GitHub repository
+- Vercel account (free tier)
+- Render.com account (free tier)
+- Firebase project setup
+
+---
+
+### Step 1: Deploy Frontend to Vercel
+
+1. **Push code to GitHub**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   git push -u origin main
+   ```
+
+2. **Import to Vercel**
+   - Go to https://vercel.com
+   - Click "Add New Project"
+   - Import your GitHub repository
+   - Configure:
+     - **Framework Preset:** Vite
+     - **Root Directory:** `frontend`
+     - **Build Command:** `npm run build`
+     - **Output Directory:** `dist`
+
+3. **Add Environment Variables in Vercel**
+   - Go to Settings → Environment Variables
+   - Add Firebase config (with `VITE_` prefix):
+     ```
+     VITE_FIREBASE_API_KEY=(from Firebase Console)
+     VITE_FIREBASE_AUTH_DOMAIN=(your-project.firebaseapp.com)
+     VITE_FIREBASE_PROJECT_ID=(your-project-id)
+     VITE_FIREBASE_STORAGE_BUCKET=(your-project.appspot.com)
+     VITE_FIREBASE_MESSAGING_SENDER_ID=(your-sender-id)
+     VITE_FIREBASE_APP_ID=(your-app-id)
+     VITE_API_URL=(backend URL - add after backend deployment)
+     ```
+
+4. **Deploy!**
+   - Vercel will auto-deploy
+   - Note your deployment URL (e.g., `https://your-app.vercel.app`)
+
+---
+
+### Step 2: Deploy Backend to Render
+
+1. **Create Web Service**
+   - Go to https://render.com
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   
+2. **Configure Service**
+   - **Name:** `aidora-backend`
+   - **Root Directory:** `backend`
+   - **Runtime:** Node
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+   - **Instance Type:** Free
+
+3. **Add Environment Variables**
+   ```
+   NODE_ENV=production
+   PORT=5000
+   EMAIL_USER=(your-email@gmail.com)
+   EMAIL_PASSWORD=(gmail-app-password)
+   FIREBASE_SERVICE_ACCOUNT=(paste entire serviceAccountKey.json content)
+   NLP_SERVICE_URL=(nlp service URL - add after NLP deployment)
+   ```
+
+4. **Deploy**
+   - Click "Create Web Service"
+   - Wait 5-10 minutes for deployment
+   - Note backend URL (e.g., `https://aidora-backend.onrender.com`)
+
+---
+
+### Step 3: Deploy NLP Service to Render
+
+1. **Create Another Web Service**
+   - Render Dashboard → "New +" → "Web Service"
+   - Connect same repository
+
+2. **Configure NLP Service**
+   - **Name:** `aidora-nlp`
+   - **Root Directory:** `nlp-service`
+   - **Runtime:** Python 3
+   - **Build Command:**
+     ```bash
+     pip install --upgrade pip && pip install -r requirements.txt && pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0.tar.gz
+     ```
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+   - **Instance Type:** Free
+
+3. **Add Environment Variables**
+   ```
+   PORT=8000
+   PYTHON_VERSION=3.11.0
+   ```
+
+4. **Deploy**
+   - Wait 10-15 minutes (downloads AI models)
+   - Note NLP URL (e.g., `https://aidora-nlp.onrender.com`)
+
+---
+
+### Step 4: Connect All Services
+
+1. **Update Backend with NLP URL**
+   - Render → Aidora Backend → Environment
+   - Update `NLP_SERVICE_URL` with your NLP service URL
+   - Save (auto-redeploys)
+
+2. **Update Frontend with Backend URL**
+   - Vercel → Your Project → Settings → Environment Variables
+   - Add `VITE_API_URL` with your backend URL + `/api`
+     - Example: `https://aidora-backend.onrender.com/api`
+   - Redeploy frontend
+
+3. **Configure Firebase for Production**
+   - Firebase Console → Authentication → Settings
+   - Add authorized domain: `your-app.vercel.app`
+   - Google Cloud Console → OAuth consent screen
+   - Add authorized domain: `vercel.app`
+
+---
+
+### Step 5: Verify Deployment
+
+**Test Backend Health:**
+```bash
+curl https://aidora-backend.onrender.com/api/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "services": {
+    "database": "connected",
+    "nlpService": "reachable"
+  }
+}
+```
+
+**Test Frontend:**
+- Visit your Vercel URL
+- Splash screen should load
+- Try Google Sign-In
+- Create a test ticket
+- Verify AI classification works
+
+---
+
+### Production URLs
+
+- **Frontend:** `https://your-app.vercel.app`
+- **Backend API:** `https://aidora-backend.onrender.com/api`
+- **NLP Service:** `https://aidora-nlp.onrender.com`
+
+---
+
+### Important Notes
+
+**Free Tier Limitations:**
+- **Render:** Services spin down after 15 min inactivity
+  - First request after idle takes 30-50 seconds
+  - 500 hours/month limit
+- **Vercel:** 100GB bandwidth/month, unlimited deployments
+
+**Security Checklist:**
+- ✅ Never commit `.env` files
+- ✅ Use environment variables for all secrets
+- ✅ Rotate Firebase keys if accidentally exposed
+- ✅ Enable 2FA on all accounts
+- ✅ Configure CORS properly in backend
+- ✅ Set up Firebase security rules
+
+**Performance Tips:**
+- Enable Vercel Analytics for monitoring
+- Use Render's paid tier ($7/month) to eliminate cold starts
+- Consider CDN for static assets
+- Implement caching strategies
+
+---
+
+### Deployment Troubleshooting
+
+#### Google Sign-In Not Working
+**Problem:** "redirect_uri_mismatch" or "unauthorized domain"  
+**Solution:**
+1. Firebase Console → Authentication → Settings → Authorized domains
+2. Add your Vercel domain (e.g., `your-app.vercel.app`)
+3. Wait 5-10 minutes for propagation
+4. Clear browser cache and try again
+
+#### Backend 404 Errors
+**Problem:** Routes return 404 on Vercel  
+**Solution:** Ensure `vercel.json` exists in `frontend` directory:
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+#### NLP Service Build Fails
+**Problem:** spaCy model download error  
+**Solution:** Use full model URL in build command:
+```bash
+pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0.tar.gz
+```
+
+#### Firebase "Invalid Credentials" Error
+**Problem:** Private key format issue on Render  
+**Solution:** Use entire `serviceAccountKey.json` as `FIREBASE_SERVICE_ACCOUNT` variable instead of separate fields
+
+#### OTP Not Working in Production
+**Problem:** Email service fails  
+**Solution:**
+1. Verify `EMAIL_USER` and `EMAIL_PASSWORD` are set
+2. Use Gmail App Password (not regular password)
+3. Check Render logs for SMTP errors
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -404,6 +638,7 @@ This project is licensed under the MIT License.
 Built with ❤️ for enterprise support teams
 
 ## 🎉 Acknowledgments
+
 
 - Google Fonts (Inter Typography)
 - Lucide Icons
